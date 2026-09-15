@@ -79,11 +79,12 @@ function upgradeGridHTML(layer, ids) {
 }
 
 // ==================== 锻造产物解锁判断 ====================
-function hasPlateUnlocked() { return !!(player.forge && player.forge.unlocked) }
-function hasRodUnlocked()   { return !!(player.forge && player.forge.rodUnlocked) }
-function hasGearUnlocked()  { return !!(player.forge && player.forge.gearUnlocked) }
-function hasWireUnlocked()  { return !!(player.forge && player.forge.wireUnlocked) }
-function hasSingUnlocked()  { return (player.ad.boosters || 0) >= 2 }
+function hasPlateUnlocked()    { return !!(player.forge && player.forge.unlocked) }
+function hasRodUnlocked()      { return !!(player.forge && player.forge.rodUnlocked) }
+function hasGearUnlocked()     { return !!(player.forge && player.forge.gearUnlocked) }
+function hasWireUnlocked()     { return !!(player.forge && player.forge.wireUnlocked) }
+function hasSingUnlocked()     { return (player.ad.boosters || 0) >= 2 }
+function hasCoatingUnlocked()  { return !!(player.forge && player.forge.coatingUnlocked) }
 
 // ==================== 升级层 ====================
 addLayer("u", {
@@ -189,18 +190,23 @@ function dimCardHTML(n) {
     let cdEnabled = player.settings && player.settings.coolDownsEnabled !== false
     let genReady = !cdEnabled || canUse("dim" + n, 100)
     let btn = "border-radius:6px; padding:4px 8px; font-size:12px; border:1px solid #4BDC13;"
+    
+    // 格式化：只保留4位有效数字/小数，防止数字抖动
+    let countStr = format(count, 4)
+    let prodStr = format(dimProd(n), 4)
+
     return `
     <div style="border:2px solid #0d5c0d; border-radius:10px; padding:10px; width:180px; background:#1a1a1a; text-align:center; box-shadow:0 0 8px #0d5c0d;">
         <h4 style="margin:0 0 6px 0; color:#4BDC13; font-size:14px;">第${n}反物质维度</h4>
-        <div style="color:#fff; font-size:13px;">数量: <span style="color:#4BDC13;">${count}</span></div>
-        <div style="color:#fff; font-size:13px;">产量: <span style="color:#4BDC13;">${format(dimProd(n))}</span></div>
+        <div style="color:#fff; font-size:13px;">数量: <span style="color:#4BDC13;">${countStr}</span></div>
+        <div style="color:#fff; font-size:13px;">产量: <span style="color:#4BDC13;">${prodStr}</span></div>
         <div style="display:flex; justify-content:center; gap:6px; margin-top:8px;">
             <button onclick="buyDim(${n})" ${canBuy?'':'disabled'}
-                style="background:${maxed?'#333':(canBuy?'#0d5c0d':'#333')}; color:${(canBuy||maxed)?'#fff':'#888'}; ${btn} cursor:${canBuy?'pointer':'not-allowed'};">
+                style="background:${maxed?'#333':(canBuy?'#0d5c0d':'#333')}; color:${(canBuy||maxed)?'#fff':'#888'}; ${btn} cursor:${canBuy?'pointer':'not-allowed'}; min-height:44px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
                 购买<br>${maxed?'(已满)':`(${dimCostText(n)})`}
             </button>
             <button onclick="genDim(${n})" ${genReady?'':'disabled'}
-                style="background:${genReady?'#0d5c0d':'#333'}; color:${genReady?'#fff':'#888'}; ${btn} cursor:${genReady?'pointer':'not-allowed'};">
+                style="background:${genReady?'#0d5c0d':'#333'}; color:${genReady?'#fff':'#888'}; ${btn} cursor:${genReady?'pointer':'not-allowed'}; min-height:44px; min-width:64px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
                 ${genReady?'生成':'冷却'}
             </button>
         </div>
@@ -209,19 +215,21 @@ function dimCardHTML(n) {
 
 // 反物质维度页面头部：只在对应产物解锁后显示其数量
 function amHeaderHTML() {
-    let plate = (player.forge && player.forge.antimatterPlate)    || new Decimal(0)
-    let rod   = (player.forge && player.forge.antimatterRod)      || new Decimal(0)
-    let gear  = (player.forge && player.forge.antimatterGear)     || new Decimal(0)
-    let wire  = (player.forge && player.forge.antimatterWire)     || new Decimal(0)
-    let sing  = (player.forge && player.forge.singularityMatter)  || new Decimal(0)
-    let eu    = player.ad.EU || new Decimal(0)
+    let plate  = (player.forge && player.forge.antimatterPlate)   || new Decimal(0)
+    let rod    = (player.forge && player.forge.antimatterRod)     || new Decimal(0)
+    let gear   = (player.forge && player.forge.antimatterGear)    || new Decimal(0)
+    let wire   = (player.forge && player.forge.antimatterWire)    || new Decimal(0)
+    let sing   = (player.forge && player.forge.singularityMatter) || new Decimal(0)
+    let coat   = (player.forge && player.forge.coatingPlate)      || new Decimal(0)
+    let eu     = player.ad.EU || new Decimal(0)
 
     let lines = []
-    if (hasPlateUnlocked()) lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(plate)}</span> 反物质板`)
-    if (hasRodUnlocked())   lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(rod)}</span> 反物质杆`)
-    if (hasGearUnlocked())  lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(gear)}</span> 反物质齿轮`)
-    if (hasWireUnlocked())  lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(wire)}</span> 反物质导线`)
-    if (hasSingUnlocked())  lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(sing)}</span> 奇异物质`)
+    if (hasPlateUnlocked())   lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(plate)}</span> 反物质板`)
+    if (hasRodUnlocked())     lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(rod)}</span> 反物质杆`)
+    if (hasGearUnlocked())    lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(gear)}</span> 反物质齿轮`)
+    if (hasWireUnlocked())    lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(wire)}</span> 反物质导线`)
+    if (hasSingUnlocked())    lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(sing)}</span> 奇异物质`)
+    if (hasCoatingUnlocked()) lines.push(`你有 <span style="color:#4BDC13;">${formatWhole(coat)}</span> 奇异物质覆盖板`)
     if (hasUpgrade("research", 21)) lines.push(`你有 <span style="color:#4BDC13;">${format(eu)}</span> EU 电力`)
 
     return `
@@ -242,7 +250,6 @@ function dimsGridHTML() {
 }
 
 // ==================== 维度提升（价格 / 里程碑） ====================
-// 价格 = 10^(9 * 2^x)，x = 维度提升次数（初始 2^0 = 1，即 10^9）
 function boostCost() {
     let n = player.ad.boosters || 0
     return new Decimal(1e9).pow(Decimal.pow(2, n))
@@ -261,12 +268,10 @@ function doBoost() {
     needCanvasUpdate = true
 }
 
-// 里程碑卡片：里程碑 1（原有），里程碑 2（第六维度配方 + 第五自动购买 + 解锁奇异物质）
 function boostMilestoneHTML() {
     let b = player.ad.boosters || 0
     let cards = []
 
-    // —— 里程碑 1 ——
     let ms1 = b >= 1
     cards.push(`
         <div style="border:3px solid ${ms1?'#2e7d2e':'#7a1a1a'}; border-radius:12px;
@@ -282,7 +287,6 @@ function boostMilestoneHTML() {
         </div>
     `)
 
-    // —— 里程碑 2（新增，含奇异物质）——
     let ms2 = b >= 2
     cards.push(`
         <div style="border:3px solid ${ms2?'#2e7d2e':'#7a1a1a'}; border-radius:12px;
@@ -303,12 +307,10 @@ function boostPanelHTML() {
     let cost = boostCost()
     let can = player.ad.antimatter.gte(cost)
 
-    // 能点 → 灰色；不能 → 红色
     let bg, border, cursor
     if (can) { bg = "#7a7a7a"; border = "#b0b0b0"; cursor = "pointer" }
     else     { bg = "#c0392b"; border = "#e74c3c"; cursor = "not-allowed" }
 
-    // 显示 10^(9·2^x) 的指数
     let expDisplay
     try {
         let exp = new Decimal(9).times(Decimal.pow(2, boosters))
@@ -372,9 +374,15 @@ addLayer("ad", {
 })
 
 // ==================== 算力层 ====================
-// 🎨 黄色
+// 每贴 1 块「算力中心」覆盖板，MP 成本底数 -0.5（10.0 → 9.5 → … → 5.0），最多 10 块
+function powerPlates() {
+    return (player.machine && player.machine.plates && player.machine.plates.power) || 0
+}
+function mpCostBase() {
+    return 10 - 0.5 * powerPlates()
+}
 function mpCost() {
-    return Decimal.pow(10, player.power.MP)
+    return Decimal.pow(mpCostBase(), player.power.MP)
 }
 function produceMP() {
     let cost = mpCost()
@@ -400,10 +408,20 @@ addLayer("power", {
         ["display-text", () => {
             let cost = mpCost()
             let can = player.ad.antimatter.gte(cost)
+            let base = mpCostBase()
+            let plates = powerPlates()
+            let baseLine = plates > 0
+                ? `<div style="color:#aaa; font-size:12px; margin-top:6px;">
+                       底数: <span style="color:#e6c200;">${base.toFixed(1)}</span>
+                       （已贴板 ${plates}/10）
+                   </div>`
+                : `<div style="color:#aaa; font-size:12px; margin-top:6px;">
+                       底数: <span style="color:#e6c200;">${base.toFixed(1)}</span>
+                   </div>`
             return `
                 <div style="display:flex; justify-content:center; padding:20px;">
                     <div ${can?'onclick="produceMP()"':''}
-                        style="border:3px solid ${can?'#a88a00':'#7a1a1a'}; border-radius:12px; padding:16px; width:240px;
+                        style="border:3px solid ${can?'#a88a00':'#7a1a1a'}; border-radius:12px; padding:16px; width:260px;
                             background:${can?'#e6c200':'#c0392b'}; text-align:center;
                             cursor:${can?'pointer':'not-allowed'};
                             box-shadow:0 0 12px ${can?'#a88a00':'#7a1a1a'}; transition:0.15s;">
@@ -412,6 +430,7 @@ addLayer("power", {
                         <div style="color:#fff; font-size:13px; margin-top:12px; font-weight:bold;">
                             价格: ${format(cost)} 反物质
                         </div>
+                        ${baseLine}
                     </div>
                 </div>
             `
@@ -420,7 +439,6 @@ addLayer("power", {
 })
 
 // ==================== 研究层 ====================
-// 🎨 蓝色
 addLayer("research", {
     name: "研究", symbol: "研究",
     row: 0, position: 3,
@@ -455,7 +473,7 @@ addLayer("research", {
             onPurchase() { player.forge.gearUnlocked = true } },
         16: { title: "第四反物质维度生成器", description: "现在可以购买第四反物质维度",
             costText: "1000000反物质 + 12板 + 6杆 + 2齿轮 + 7算力",
-            multiCost: { "ad.antimatter": new Decimal(1e6), "forge.antimatterPlate": new Decimal(12), "forge.antimatterRod": new Decimal(6), "forge.antimatterGear": new Decimal(2), "power.MP": new Decimal(2) },
+            multiCost: { "ad.antimatter": new Decimal(1e6), "forge.antimatterPlate": new Decimal(12), "forge.antimatterRod": new Decimal(6), "forge.antimatterGear": new Decimal(2), "power.MP": new Decimal(7) },
             unlocked() { return hasUpgrade("research", 15) },
             onPurchase() {} },
         17: { title: "维度提升器", description: "解锁维度提升器",
@@ -518,7 +536,19 @@ addLayer("research", {
             multiCost: { "ad.antimatter": new Decimal(1e20), "power.MP": new Decimal(21) },
             unlocked() { return hasUpgrade("research", 27) },
             onPurchase() {} },
-
+        29: { title: "奇异物质覆盖板", description: "解锁锻造「奇异物质覆盖板」配方，并解锁机器页面的「覆盖板」子页面",
+            costText: "1e20反物质 + 80板 + 40杆 + 20齿轮 + 30导线 + 21算力 + 1奇异物质",
+            multiCost: {
+                "ad.antimatter": new Decimal(1e20),
+                "forge.antimatterPlate": new Decimal(80),
+                "forge.antimatterRod": new Decimal(40),
+                "forge.antimatterGear": new Decimal(20),
+                "forge.antimatterWire": new Decimal(30),
+                "power.MP": new Decimal(21),
+                "forge.singularityMatter": new Decimal(1),
+            },
+            unlocked() { return hasUpgrade("research", 28) },
+            onPurchase() { player.forge.coatingUnlocked = true } },
     },
     tabFormat: [ ["microtabs", "main"] ],
     microtabs: {
@@ -529,7 +559,7 @@ addLayer("research", {
             },
             "forge": {
                 name() { return "锻造" },
-                content: [ ["display-text", () => upgradeGridHTML("research", [11, 13, 15, 20, 28])] ],
+                content: [ ["display-text", () => upgradeGridHTML("research", [11, 13, 15, 20, 28, 29])] ],
             },
             "machine": {
                 name() { return "机器" },
@@ -542,17 +572,17 @@ addLayer("research", {
 })
 
 // ==================== 锻造层 ====================
-// 🎨 红色
 function getForgeBatch() {
     return (player.ad.boosters || 0) >= 1 ? 10 : 1
 }
 
 var FORGE_RECIPES = {
-    plate:    { ms: 500,  result: "antimatterPlate" },
-    rod:      { ms: 1500, result: "antimatterRod" },
-    gear:     { ms: 3000, result: "antimatterGear" },
-    wire:     { ms: 2000, result: "antimatterWire" },
-    compress: { ms: 8000, result: "singularityMatter" },
+    plate:    { ms: 500,   result: "antimatterPlate" },
+    rod:      { ms: 1500,  result: "antimatterRod" },
+    gear:     { ms: 3000,  result: "antimatterGear" },
+    wire:     { ms: 2000,  result: "antimatterWire" },
+    compress: { ms: 8000,  result: "singularityMatter" },
+    coating:  { ms: 12000, result: "coatingPlate" },
 }
 
 function forgeCdEnabled() {
@@ -644,6 +674,33 @@ function forgeCompress() {
     }
 }
 
+// 奇异物质覆盖板：1e20 AM + 40板 + 20杆 + 10齿轮 + 10导线 + 2MP + 1奇异物质 → 1 覆盖板
+function forgeCoating() {
+    if (forgeCooking("coating")) return
+    let costs = {
+        "ad.antimatter": new Decimal(1e20),
+        "forge.antimatterPlate": new Decimal(40),
+        "forge.antimatterRod": new Decimal(20),
+        "forge.antimatterGear": new Decimal(10),
+        "forge.antimatterWire": new Decimal(10),
+        "power.MP": new Decimal(2),
+        "forge.singularityMatter": new Decimal(1),
+    }
+    if (!multiAfford(costs)) return
+    multiPay(costs)
+    if (forgeCdEnabled()) {
+        if (!player.forge.pending) player.forge.pending = {}
+        player.forge.pending.coating = { start: Date.now(), n: 1 }
+    } else {
+        player.forge.coatingPlate = player.forge.coatingPlate.add(1)
+    }
+}
+
+function forgeBatchCount(key) {
+    if (key === "compress" || key === "coating") return 1
+    return getForgeBatch()
+}
+
 function forgeProgressBarHTML(key, ms) {
     let t = player.timePlayed || 0
     let cdEnabled = forgeCdEnabled()
@@ -670,12 +727,14 @@ function forgeProgressBarHTML(key, ms) {
     </div>`
 }
 
-function forgeRowHTML({ title, desc, costText, onClick, canAfford, cooldownKey, cooldownMs }) {
+function forgeRowHTML({ title, desc, onClick, canAfford, cooldownKey, cooldownMs }) {
     let t = player.timePlayed || 0
 
     let cdEnabled = forgeCdEnabled()
     let cooking = cdEnabled && forgeCooking(cooldownKey)
     let canBuy = canAfford && !cooking
+
+    let batch = forgeBatchCount(cooldownKey)
 
     let bg, border, cursor
     if (canBuy)       { bg = "#c0392b"; border = "#e74c3c"; cursor = "pointer" }
@@ -698,32 +757,30 @@ function forgeRowHTML({ title, desc, costText, onClick, canAfford, cooldownKey, 
                 user-select:none;">
             <h3 style="margin:0 0 4px 0; color:#fff; font-size:15px;">${title}</h3>
             <div style="color:#fff; font-size:12px; line-height:1.4;">${desc}</div>
-            <div style="color:#fff; font-size:12px; margin-top:4px; font-weight:bold;">价格: ${costText}</div>
+            <div style="color:#fff; font-size:13px; margin-top:6px; font-weight:bold;">本次合成: ×${batch}</div>
         </div>
         ${forgeProgressBarHTML(cooldownKey, cooldownMs)}
     </div>`
 }
 
-// 锻造页头部：只在对应产物解锁后显示其数量
 function forgeHeaderHTML() {
     let parts = []
-    if (hasPlateUnlocked()) parts.push(`板: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterPlate)}</span>`)
-    if (hasRodUnlocked())   parts.push(`杆: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterRod)}</span>`)
-    if (hasGearUnlocked())  parts.push(`齿轮: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterGear)}</span>`)
-    if (hasWireUnlocked())  parts.push(`导线: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterWire)}</span>`)
-    if (hasSingUnlocked())  parts.push(`奇异物质: <span style="color:#e74c3c;">${formatWhole(player.forge.singularityMatter)}</span>`)
+    if (hasPlateUnlocked())    parts.push(`板: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterPlate)}</span>`)
+    if (hasRodUnlocked())      parts.push(`杆: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterRod)}</span>`)
+    if (hasGearUnlocked())     parts.push(`齿轮: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterGear)}</span>`)
+    if (hasWireUnlocked())     parts.push(`导线: <span style="color:#e74c3c;">${formatWhole(player.forge.antimatterWire)}</span>`)
+    if (hasSingUnlocked())     parts.push(`奇异物质: <span style="color:#e74c3c;">${formatWhole(player.forge.singularityMatter)}</span>`)
+    if (hasCoatingUnlocked())  parts.push(`覆盖板: <span style="color:#e74c3c;">${formatWhole(player.forge.coatingPlate || new Decimal(0))}</span>`)
     if (parts.length === 0) return ''
     return `<h2 style="text-align:center; color:#fff;">${parts.join('&nbsp;&nbsp;')}</h2>`
 }
 
-// 子页面：反物质产物
 function forgeAntiRowsHTML() {
     let rows = []
 
     rows.push(forgeRowHTML({
         title: "反物质压板",
         desc: `20 反物质 → 1 板`,
-        costText: "20 反物质",
         canAfford: multiAfford({ "ad.antimatter": new Decimal(20) }),
         onClick: "forgePlate()",
         cooldownKey: "plate",
@@ -733,7 +790,6 @@ function forgeAntiRowsHTML() {
     if (player.forge.rodUnlocked) rows.push(forgeRowHTML({
         title: "反物质压杆",
         desc: `120 反物质 → 1 杆`,
-        costText: "120 反物质",
         canAfford: multiAfford({ "ad.antimatter": new Decimal(120) }),
         onClick: "forgeRod()",
         cooldownKey: "rod",
@@ -743,7 +799,6 @@ function forgeAntiRowsHTML() {
     if (player.forge.gearUnlocked) rows.push(forgeRowHTML({
         title: "反物质齿轮",
         desc: `20AM + 4 板 + 1 杆 → 1 齿轮`,
-        costText: "20 反物质 + 4 板 + 1 杆",
         canAfford: multiAfford({
             "ad.antimatter": new Decimal(20),
             "forge.antimatterPlate": new Decimal(4),
@@ -757,7 +812,6 @@ function forgeAntiRowsHTML() {
     if (player.forge.wireUnlocked) rows.push(forgeRowHTML({
         title: "反物质导线",
         desc: `1000 反物质 → 1 导线`,
-        costText: "1000 反物质",
         canAfford: multiAfford({ "ad.antimatter": new Decimal(1000) }),
         onClick: "forgeWire()",
         cooldownKey: "wire",
@@ -767,7 +821,6 @@ function forgeAntiRowsHTML() {
     return `<div style="display:flex; flex-direction:column; align-items:center;">${rows.join('')}</div>`
 }
 
-// 子页面：奇异物质产物
 function forgeSingRowsHTML() {
     let rows = []
 
@@ -775,7 +828,6 @@ function forgeSingRowsHTML() {
         rows.push(forgeRowHTML({
             title: "压缩奇异物质",
             desc: `16 尘埃 → 1 奇异物质`,
-            costText: "16 奇异物质尘埃",
             canAfford: ((player.machine && player.machine.singularityDust) || new Decimal(0)).gte(16),
             onClick: "forgeCompress()",
             cooldownKey: "compress",
@@ -783,8 +835,34 @@ function forgeSingRowsHTML() {
         }))
     } else {
         rows.push(`
-            <div style="color:#aaa; padding:30px; text-align:center; font-size:14px;">
+            <div style="color:#aaa; padding:20px; text-align:center; font-size:14px;">
                 完成研究「压缩奇异物质配方」后解锁此配方
+            </div>
+        `)
+    }
+
+    if (hasCoatingUnlocked()) {
+        let coatCosts = {
+            "ad.antimatter": new Decimal(1e20),
+            "forge.antimatterPlate": new Decimal(40),
+            "forge.antimatterRod": new Decimal(20),
+            "forge.antimatterGear": new Decimal(10),
+            "forge.antimatterWire": new Decimal(10),
+            "power.MP": new Decimal(2),
+            "forge.singularityMatter": new Decimal(1),
+        }
+        rows.push(forgeRowHTML({
+            title: "奇异物质覆盖板",
+            desc: `1e20AM + 40板 + 20杆 + 10齿轮 + 10导线 + 2算力 + 1奇异物质 → 1 覆盖板`,
+            canAfford: multiAfford(coatCosts),
+            onClick: "forgeCoating()",
+            cooldownKey: "coating",
+            cooldownMs: 12000,
+        }))
+    } else {
+        rows.push(`
+            <div style="color:#aaa; padding:20px; text-align:center; font-size:14px;">
+                完成研究「奇异物质覆盖板」后解锁此配方
             </div>
         `)
     }
@@ -804,9 +882,11 @@ addLayer("forge", {
         antimatterGear: new Decimal(0),
         antimatterWire: new Decimal(0),
         singularityMatter: new Decimal(0),
+        coatingPlate: new Decimal(0),
         rodUnlocked: false,
         gearUnlocked: false,
         wireUnlocked: false,
+        coatingUnlocked: false,
         pending: {},
     }},
     layerShown() { return player.forge.unlocked },
@@ -891,9 +971,12 @@ function singularityPanelHTML() {
     let timer = player.machine.singularityTimer || 0
     let countdown = Math.max(0, 10 - timer)
 
+    let singPlates = (player.machine.plates && player.machine.plates.singularity) || 0
+    let base = 10 - 0.5 * singPlates
+
     let nextDust = new Decimal(0)
     if (storedAM.gte(1)) {
-        nextDust = storedAM.log10().times(100).floor().div(100)
+        nextDust = storedAM.ln().div(Math.log(base)).times(100).floor().div(100)
     }
 
     let html = `
@@ -913,7 +996,7 @@ function singularityPanelHTML() {
             机器内反物质总量: <span style="color:#95a5a6;">${format(storedAM)}</span> AM<br>
             奇异物质尘埃: <span style="color:#95a5a6;">${format(dust)}</span><br>
             下次产出倒计时: <span style="color:#95a5a6;">${countdown.toFixed(1)}</span> 秒<br>
-            <span style="color:#aaa; font-size:13px;">（每 10 秒产出 log10(存量) 尘埃，保留 2 位小数）</span><br>
+            <span style="color:#aaa; font-size:13px;">（每 10 秒产出 log_${base.toFixed(1)}(存量) 尘埃，保留 2 位小数）</span><br>
             <span style="color:#aaa; font-size:13px;">下次预计产出: ${nextDust.gt(0) ? nextDust.toFixed(2) : "0"} 尘埃</span>
         </div>
     </div>
@@ -926,26 +1009,41 @@ function autoDimUnlocked(n) {
     return hasUpgrade("research", 21 + n)
 }
 
+// 每个维度独立的间隔输入
 function autoBuyPanelHTML() {
     if (inputFocused && _autoCache) return _autoCache
 
-    let interval = Math.max(0.1, player.machine.autoInterval)
+    let autoPlates = (player.machine.plates && player.machine.plates.autoBuy) || 0
+    let minInterval = 0.1 / Math.pow(10, autoPlates)
 
-    let dims = []
-    for (let n = 1; n <= 5; n++) if (autoDimUnlocked(n)) dims.push(n)
+    if (!player.machine.autoIntervals) player.machine.autoIntervals = {1:1,2:1,3:1,4:1,5:1}
 
-    let perDimCost = new Decimal(1e4)
-    let euRate = perDimCost.times(dims.length).div(interval)
-    let running = dims.length > 0
-
-    let statusRows = ''
+    let rows = ''
+    let totalEuRate = new Decimal(0)
+    let unlockedCount = 0
     for (let n = 1; n <= 5; n++) {
         let on = autoDimUnlocked(n)
-        let color = on ? '#95a5a6' : '#666'
-        let label = on ? '● 运行中' : '○ 未解锁'
-        statusRows += `
-            <div style="color:${color}; font-size:14px; margin-top:6px;">
-                第 ${n} 反物质维度：${label}
+        let interval = Math.max(minInterval, player.machine.autoIntervals[n] || 1)
+        let euRate = new Decimal(1e4).div(interval)
+        if (on) { totalEuRate = totalEuRate.add(euRate); unlockedCount++ }
+        
+        // 格式化输入框的 value，防止 0.003125 这种长小数
+        let intervalStr = interval < 0.01 ? interval.toExponential(0) : interval.toString()
+        
+        rows += `
+            <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin:8px 0; color:${on?'#fff':'#666'};">
+                <span style="width:130px; text-align:right;">第 ${n} 反物质维度:</span>
+                <input type="number" step="0.01" min="${minInterval}" value="${intervalStr}"
+                    ${on?'':'disabled'}
+                    onfocus="inputFocused = true"
+                    onblur="inputFocused = false; updateTabFormats()"
+                    oninput="player.machine.autoIntervals[${n}] = Math.max(${minInterval}, parseFloat(this.value) || ${minInterval})"
+                    style="width:120px; padding:4px; border-radius:6px; border:1px solid #95a5a6;
+                        background:#1a1a1a; color:#fff; font-size:13px;">
+                <span style="width:30px;">秒</span>
+                <span style="width:130px; font-size:12px; color:${on?'#95a5a6':'#666'};">
+                    ${on?`(${format(euRate)} EU/s)`:'未解锁'}
+                </span>
             </div>
         `
     }
@@ -953,30 +1051,102 @@ function autoBuyPanelHTML() {
     let html = `
     <div style="padding:20px; text-align:center;">
         <h3 style="color:#95a5a6; margin-bottom:20px;">维度自动购买</h3>
-        <div style="margin:16px 0;">
-            <label style="color:#fff; font-size:15px;">自动购买间隔: </label>
-            <input type="number" step="0.1" min="0.1" value="${interval}"
-                onfocus="inputFocused = true"
-                onblur="inputFocused = false; updateTabFormats()"
-                oninput="player.machine.autoInterval = Math.max(0.1, parseFloat(this.value) || 0.1)"
-                style="width:150px; padding:6px; border-radius:6px; border:1px solid #95a5a6;
-                    background:#1a1a1a; color:#fff; font-size:14px;">
-            <span style="color:#fff;">秒</span>
-        </div>
+        ${rows}
         <div style="color:#fff; line-height:2.2; font-size:15px; margin-top:20px;">
-            当前 EU 消耗速度: <span style="color:#95a5a6;">${format(euRate)}</span> EU/s<br>
-            <span style="color:#aaa; font-size:13px;">（每维度每次消耗 1e4 EU，间隔 ${interval}s）</span>
+            当前 EU 总消耗速度: <span style="color:#95a5a6;">${format(totalEuRate)}</span> EU/s<br>
+            <span style="color:#aaa; font-size:13px;">（每维度每次消耗 1e4 EU，当前最低间隔 ${minInterval < 0.001 ? minInterval.toExponential(0) : minInterval.toFixed(3)}s）</span>
         </div>
-        <div style="margin-top:16px;">
-            ${statusRows}
-        </div>
-        <div style="color:${running?'#95a5a6':'#888'}; margin-top:16px; font-size:14px;">
-            ${running ? '● 运行中' : '● 尚未解锁任何自动购买器'}
+        <div style="color:${unlockedCount>0?'#95a5a6':'#888'}; margin-top:16px; font-size:14px;">
+            ${unlockedCount > 0 ? `● 已启用 ${unlockedCount} 个自动购买器` : '● 尚未解锁任何自动购买器'}
         </div>
     </div>
     `
     _autoCache = html
     return html
+}
+
+// ==================== 覆盖板子页面 ====================
+// 消耗 cost 个覆盖板，为目标贴 1 板（不超过 max）
+function attachPlate(target, cost, max) {
+    if (!player.machine.plates) player.machine.plates = {}
+    let have = (player.forge && player.forge.coatingPlate) || new Decimal(0)
+    let current = player.machine.plates[target] || 0
+    if (current >= max) return
+    if (have.lt(cost)) return
+    player.forge.coatingPlate = have.sub(cost)
+    player.machine.plates[target] = current + 1
+    needCanvasUpdate = true
+    updateTabFormats()
+}
+
+// 单张覆盖板卡片
+function plateCardHTML(id, title, info, maxPlates, cost) {
+    let plates = (player.machine.plates && player.machine.plates[id]) || 0
+    let have = (player.forge && player.forge.coatingPlate) || new Decimal(0)
+    let canAttach = have.gte(cost) && plates < maxPlates
+    let btn = "border-radius:6px; padding:4px 8px; font-size:12px; border:1px solid #4BDC13;"
+
+    return `
+    <div style="border:2px solid #0d5c0d; border-radius:10px; padding:10px; width:180px; background:#1a1a1a; text-align:center; box-shadow:0 0 8px #0d5c0d;">
+        <h4 style="margin:0 0 6px 0; color:#4BDC13; font-size:14px;">${title}</h4>
+        <div style="color:#fff; font-size:12px; line-height:1.5; min-height:34px;">${info}</div>
+        <div style="color:#fff; font-size:13px; margin-top:6px;">已贴板: <span style="color:#4BDC13;">${plates} / ${maxPlates}</span></div>
+        <div style="display:flex; justify-content:center; margin-top:8px;">
+            <button onclick="attachPlate('${id}', ${cost}, ${maxPlates})" ${canAttach?'':'disabled'}
+                style="background:${canAttach?'#0d5c0d':'#333'}; color:${canAttach?'#fff':'#888'}; ${btn} cursor:${canAttach?'pointer':'not-allowed'};">
+                贴板 (消耗 ${cost})
+            </button>
+        </div>
+    </div>`
+}
+
+function platePanelHTML() {
+    let cards = []
+
+    if (hasUpgrade("research", 21)) {
+        let plates = (player.machine.plates && player.machine.plates.generator) || 0
+        let exp = 0.5 + 0.01 * plates
+        let info = `消耗速率: <span style="color:#4BDC13;">${format(player.machine.lastActualAM || new Decimal(0))}</span> AM/s<br>发电指数: <span style="color:#4BDC13;">${exp.toFixed(2)}</span>`
+        cards.push(plateCardHTML("generator", "反物质发电机", info, 20, 1))
+    }
+
+    if (hasUpgrade("research", 27)) {
+        let plates = (player.machine.plates && player.machine.plates.singularity) || 0
+        let base = 10 - 0.5 * plates
+        let info = `消耗速率: <span style="color:#4BDC13;">${format(player.machine.singularityRate || 0)}</span> AM/s<br>log 底数: <span style="color:#4BDC13;">${base.toFixed(1)}</span>`
+        cards.push(plateCardHTML("singularity", "奇异物质凝聚器", info, 10, 1))
+    }
+
+    let hasAnyAuto = false
+    for (let n = 1; n <= 5; n++) if (autoDimUnlocked(n)) { hasAnyAuto = true; break }
+    if (hasAnyAuto) {
+        let plates = (player.machine.plates && player.machine.plates.autoBuy) || 0
+        let minInt = 0.1 / Math.pow(10, plates)
+        // 格式化卡片信息
+        let minIntStr = minInt < 0.001 ? minInt.toExponential(0) : minInt.toFixed(3)
+        let info = `当前最低间隔: <span style="color:#4BDC13;">${minIntStr}</span> s`
+        cards.push(plateCardHTML("autoBuy", "维度自动购买器", info, 3, 1))
+    }
+
+    if (player.power.unlocked) {
+        let plates = (player.machine.plates && player.machine.plates.power) || 0
+        let base = 10 - 0.5 * plates
+        let info = `MP 成本底数: <span style="color:#4BDC13;">${base.toFixed(1)}</span>`
+        cards.push(plateCardHTML("power", "算力中心", info, 10, 1))
+    }
+
+    let have = (player.forge && player.forge.coatingPlate) || new Decimal(0)
+
+    return `
+    <div style="text-align:center; padding:14px 0 4px 0;">
+        <div style="color:#fff; font-size:15px;">
+            奇异物质覆盖板: <span style="color:#4BDC13; font-size:20px;">${formatWhole(have)}</span>
+        </div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:12px; padding:10px;">
+        ${cards.join('')}
+    </div>
+    `
 }
 
 addLayer("machine", {
@@ -988,18 +1158,23 @@ addLayer("machine", {
         unlocked: false,
         points: new Decimal(0),
         genRate: 0,
-        autoInterval: 1,
+        autoIntervals: {1:1, 2:1, 3:1, 4:1, 5:1},
+        autoTimers: {1:0, 2:0, 3:0, 4:0, 5:0},
         lastActualAM: new Decimal(0),
         lastEU: new Decimal(0),
-        autoTimer: 0,
         singularityRate: 0,
         singularityAM: new Decimal(0),
         singularityDust: new Decimal(0),
         singularityTimer: 0,
+        plates: {},
     }},
     layerShown() { return player.machine.unlocked },
 
     update(diff) {
+        // —— 兼容旧存档 ——
+        if (!player.machine.autoIntervals) player.machine.autoIntervals = {1:1, 2:1, 3:1, 4:1, 5:1}
+        if (!player.machine.autoTimers)    player.machine.autoTimers    = {1:0, 2:0, 3:0, 4:0, 5:0}
+
         // —— 发电机 ——
         let want = new Decimal(player.machine.genRate).times(diff)
         let actual = player.ad.antimatter.min(want)
@@ -1007,7 +1182,9 @@ addLayer("machine", {
         if (actual.gt(0)) {
             player.ad.antimatter = player.ad.antimatter.sub(actual)
             let rate = actual.div(diff)
-            let euRate = rate.pow(0.5)
+            let genPlates = (player.machine.plates && player.machine.plates.generator) || 0
+            let exponent = 0.5 + 0.01 * genPlates
+            let euRate = rate.pow(exponent)
             player.ad.EU = (player.ad.EU || new Decimal(0)).add(euRate.times(diff))
             player.machine.lastActualAM = rate
             player.machine.lastEU = euRate
@@ -1033,27 +1210,28 @@ addLayer("machine", {
             player.machine.singularityTimer -= 10
             let stored = player.machine.singularityAM || new Decimal(0)
             if (stored.gte(1)) {
-                let gain = stored.log10().times(100).floor().div(100)
+                let singPlates = (player.machine.plates && player.machine.plates.singularity) || 0
+                let base = 10 - 0.5 * singPlates
+                let gain = stored.ln().div(Math.log(base)).times(100).floor().div(100)
                 player.machine.singularityDust = (player.machine.singularityDust || new Decimal(0)).add(gain)
                 player.machine.singularityAM = new Decimal(0)
             }
         }
 
-        // —— 自动购买维度 ——
-        let dims = []
-        for (let n = 1; n <= 5; n++) if (autoDimUnlocked(n)) dims.push(n)
+        // —— 自动购买维度（每维度独立计时） ——
+        let autoPlates = (player.machine.plates && player.machine.plates.autoBuy) || 0
+        let minInterval = 0.1 / Math.pow(10, autoPlates)
 
-        if (dims.length > 0) {
-            player.machine.autoTimer = (player.machine.autoTimer || 0) + diff
-            let interval = Math.max(0.1, player.machine.autoInterval)
-            let costPerTrigger = new Decimal(1e4).times(dims.length)
-            let maxIter = 100
-
-            while (player.machine.autoTimer >= interval && maxIter-- > 0) {
-                if ((player.ad.EU || new Decimal(0)).gte(costPerTrigger)) {
-                    player.ad.EU = player.ad.EU.sub(costPerTrigger)
-                    for (let n of dims) genDim(n, true)
-                    player.machine.autoTimer -= interval
+        for (let n = 1; n <= 5; n++) {
+            if (!autoDimUnlocked(n)) continue
+            let interval = Math.max(minInterval, player.machine.autoIntervals[n] || 1)
+            player.machine.autoTimers[n] = (player.machine.autoTimers[n] || 0) + diff
+            let iter = 100
+            while (player.machine.autoTimers[n] >= interval && iter-- > 0) {
+                if ((player.ad.EU || new Decimal(0)).gte(1e4)) {
+                    player.ad.EU = player.ad.EU.sub(1e4)
+                    genDim(n, true)
+                    player.machine.autoTimers[n] -= interval
                 } else break
             }
         }
@@ -1076,6 +1254,11 @@ addLayer("machine", {
                 name() { return "奇异物质凝聚器" },
                 unlocked() { return hasUpgrade("research", 27) },
                 content: [ ["display-text", () => singularityPanelHTML()] ],
+            },
+            "coating": {
+                name: "覆盖板" ,
+                unlocked() { return hasCoatingUnlocked() },
+                content: [ ["display-text", () => platePanelHTML()] ],
             },
         },
     },
